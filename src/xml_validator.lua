@@ -55,33 +55,52 @@ end
 local function validateAttribute(attrib, value)
     if nl_attribute > 0 then
         if #attrib > nl_attribute then
-            return false, "XMLThreatProtection[AttrNameExceeded]: Attribute name length exceeded."
+            return false, "XMLThreatProtection[AttrNameExceeded]: Attribute name length exceeded (" .. attrib .. ")."
         end
     end
 
     if v_attrib > 0 then
         if #value > v_attrib then
-            return false, "XMLThreatProtection[AttrValueExceeded]: Attribute value length exceeded."
+            return false, "XMLThreatProtection[AttrValueExceeded]: Attribute value length exceeded (" .. value .. ")."
         end
     end
 
     return true, ""
 end
 
+local function validateTag(tag)
+    if nl_element > 0 then
+        if #tag > nl_element then
+            return false, "XMLThreatProtection[ElemNameExceeded]: Element name length exceeded (" .. tag .. ")."
+        end
+    end
+end
+
 local function validateXml(value)
     if type(value) == "table" then
+        -- Validate the child count
+        if st_lcc > 0 then
+            if #value > st_lcc then
+                return false, "XMLThreatProtection[ChildCountExceeded]: Children count exceeded."
+            end
+        end
 
         for k,v in pairs(value) do
             ngx.log(ngx.DEBUG, "k=" .. k)
             if k == 0 then -- TAG
-                ngx.log(ngx.DEBUG, "TAG -- " .. v)
-            elseif type(k) == "string" then -- Attribute
+                local result, message = validateTag(v)
+                if result == false then
+                    return result, message
+                end
+            elseif type(k) == "string" then
+                -- Validate the attribute name and value
                 local result, message = validateAttribute(k, value[k])
                 if result == false then
                     return result, message
                 end
             else
-                local result, message = validateXml(v) -- recursively repeat the same procedure
+                -- recursively repeat the same procedure
+                local result, message = validateXml(v)
                 if result == false then
                     return result, message
                 end
@@ -130,6 +149,9 @@ function XmlValidator.execute(body,
     v_pid = value_processing_instruction_data
 
     local parsedXml = xml.eval(body)
+    if not parsedXml then
+        return true, ""
+    end
 
     return validateXml(parsedXml)
 end
