@@ -1,4 +1,4 @@
-# JSON Threat Protection plugin for Kong
+# XML Threat Protection plugin for Kong
 [![][t1t-logo]][Trust1Team-url]
 
 Kong is a scalable, open source API Layer *(also known as an API Gateway, or
