@@ -48,9 +48,35 @@ local function is_array(table)
     return max
 end
 
+function string.starts(String, Start)
+    return string.sub(String, 1, string.len(Start)) == Start
+end
+
 --------------------------
 -- Validation functions --
 --------------------------
+
+local function validateNamespace(ns, value)
+    if nl_ns_prefix > 0 then
+
+        -- Check if a namespace prefix is defined
+        local pos = string.find(ns, ":")
+        if pos then
+            local prefix = string.sub(ns, pos + 1) -- also skip the ':'
+            if #prefix > nl_ns_prefix then
+                return false, "XMLThreatProtection[NSPrefixExceeded]: Namespace prefix length exceeded (" .. ns .. ")."
+            end
+        end
+    end
+
+    if v_ns_uri > 0 then
+        if #value > v_ns_uri then
+            return false, "XMLThreatProtection[NSURIExceeded]: Namespace uri length exceeded (" .. value .. ")."
+        end
+    end
+
+    return true, ""
+end
 
 local function validateAttribute(attrib, value)
     if nl_attribute > 0 then
@@ -93,10 +119,18 @@ local function validateXml(value)
                     return result, message
                 end
             elseif type(k) == "string" then
-                -- Validate the attribute name and value
-                local result, message = validateAttribute(k, value[k])
-                if result == false then
-                    return result, message
+
+                if string.starts(k, "xmlns") then -- Validate the namespace name and value
+                    local result, message = validateNamespace(k, value[k])
+                    if result == false then
+                        return result, message
+                    end
+                else
+                    -- Validate the attribute name and value
+                    local result, message = validateAttribute(k, value[k])
+                    if result == false then
+                        return result, message
+                    end
                 end
             else
                 -- recursively repeat the same procedure
