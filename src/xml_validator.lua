@@ -122,12 +122,26 @@ local function validateXml(value)
                     return result, message
                 end
             elseif type(k) == "string" then
-                if string.starts(k, "xmlns") then -- Validate the namespace name and value
-                    local result, message = validateNamespace(k, value[k])
+                if string.starts(k, "xmlns") then
+                    namespaceCount = namespaceCount + 1
+                    if st_lncpe > 0 then  -- Validate the namespace count per element
+                        if namespaceCount > st_lncpe then
+                            return false, "XMLThreatProtection[NSCountExceeded]: Namespace count exceeded."
+                        end
+                    end
+
+                    local result, message = validateNamespace(k, value[k]) -- Validate the namespace name and value
                     if result == false then
                         return result, message
                     end
                 else
+                    attributeCount = attributeCount + 1
+                    if st_lacpe > 0 then   -- Validate the attribute count per element
+                        if attributeCount > st_lacpe then
+                            return false, "XMLThreatProtection[AttrCountExceeded]: Attribute count exceed."
+                        end
+                    end
+
                     -- Validate the attribute name and value
                     local result, message = validateAttribute(k, value[k])
                     if result == false then
@@ -180,7 +194,7 @@ function XmlValidator.execute(body,
 
     st_lnd = structure_limits_node_depth
     st_lacpe = structure_limits_attribute_count_per_element
-    st_lnd = structure_limits_namespace_count_per_element
+    st_lncpe = structure_limits_namespace_count_per_element
     st_lcc = structure_limits_child_count
 
     v_text = value_text
@@ -188,6 +202,8 @@ function XmlValidator.execute(body,
     v_ns_uri = value_namespace_uri
     v_comment = value_comment
     v_pid = value_processing_instruction_data
+
+    ngx.log(ngx.DEBUG, body)
 
     local parsedXml = xml.eval(body)
     if not parsedXml then
