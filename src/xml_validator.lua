@@ -111,6 +111,9 @@ local function validateXml(value)
             end
         end
 
+        local namespaceCount = 0
+        local attributeCount = 0
+
         for k,v in pairs(value) do
             ngx.log(ngx.DEBUG, "k=" .. k)
             if k == 0 then -- TAG
@@ -119,7 +122,6 @@ local function validateXml(value)
                     return result, message
                 end
             elseif type(k) == "string" then
-
                 if string.starts(k, "xmlns") then -- Validate the namespace name and value
                     local result, message = validateNamespace(k, value[k])
                     if result == false then
@@ -142,6 +144,11 @@ local function validateXml(value)
         end
     else
         ngx.log(ngx.DEBUG, "VALUE " .. value)
+        if v_text > 0 then
+            if #value > v_text then
+                return false, "XMLThreatProtection[TextExceeded]: Text length exceeded (" .. value .. ")."
+            end
+        end
     end
 
     return true, ""
