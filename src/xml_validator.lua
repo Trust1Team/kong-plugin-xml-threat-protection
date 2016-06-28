@@ -17,36 +17,12 @@ local st_lcc
 local v_text
 local v_attrib
 local v_ns_uri
-local v_comment
 local v_pid
+local nodes = 0
 
 ----------------------
 -- Utility function --
 ----------------------
-
--- Determine with a Lua table can be treated as an array.
--- Explicitly returns "not an array" for very sparse arrays.
--- Returns:
--- -1   Not an array
--- 0    Empty table
--- >0   Highest index in the array
-local function is_array(table)
-    local max = 0
-    local count = 0
-    for k, v in pairs(table) do
-        if type(k) == "number" then
-            if k > max then max = k end
-            count = count + 1
-        else
-            return -1
-        end
-    end
-    if max > count * 2 then
-        return -1
-    end
-
-    return max
-end
 
 function string.starts(String, Start)
     return string.sub(String, 1, string.len(Start)) == Start
@@ -56,6 +32,24 @@ end
 -- Validation functions --
 --------------------------
 
+local function validatePit(pit)
+    if nl_pit > 0 then -- Validate the processing instruction target length
+        local spacePos = string.find(pit, " ")
+        if spacePos then
+            local target = string.sub(pit, 0, spacePos - 1)
+            if #target > nl_pit then
+                return false, "XMLThreatProtection[PITargetExceeded]: Processing Instruction target length exceeded (" .. target .. "), max " .. nl_pit .. " allowed, found " .. #target .. "."
+            end
+        end
+    end
+
+    if v_pid > 0 then
+
+    end
+
+    return true, ""
+end
+
 local function validateNamespace(ns, value)
     if nl_ns_prefix > 0 then
 
@@ -64,14 +58,14 @@ local function validateNamespace(ns, value)
         if pos then
             local prefix = string.sub(ns, pos + 1) -- also skip the ':'
             if #prefix > nl_ns_prefix then
-                return false, "XMLThreatProtection[NSPrefixExceeded]: Namespace prefix length exceeded (" .. ns .. ")."
+                return false, "XMLThreatProtection[NSPrefixExceeded]: Namespace prefix length exceeded (" .. ns .. "), max " .. nl_ns_prefix .. " allowed, found " .. #prefix .. "."
             end
         end
     end
 
     if v_ns_uri > 0 then
         if #value > v_ns_uri then
-            return false, "XMLThreatProtection[NSURIExceeded]: Namespace uri length exceeded (" .. value .. ")."
+            return false, "XMLThreatProtection[NSURIExceeded]: Namespace uri length exceeded (" .. value .. "), max " .. v_ns_uri .. " allowed, found " .. #value .. "."
         end
     end
 
@@ -81,25 +75,27 @@ end
 local function validateAttribute(attrib, value)
     if nl_attribute > 0 then
         if #attrib > nl_attribute then
-            return false, "XMLThreatProtection[AttrNameExceeded]: Attribute name length exceeded (" .. attrib .. ")."
+            return false, "XMLThreatProtection[AttrNameExceeded]: Attribute name length exceeded (" .. attrib .. "), max " .. nl_attribute .. " allowed, found " .. #attrib .. "."
         end
     end
 
     if v_attrib > 0 then
         if #value > v_attrib then
-            return false, "XMLThreatProtection[AttrValueExceeded]: Attribute value length exceeded (" .. value .. ")."
+            return false, "XMLThreatProtection[AttrValueExceeded]: Attribute value length exceeded (" .. value .. "), max " .. v_attrib .. " allowed, found " .. #value .. "."
         end
     end
 
     return true, ""
 end
 
-local function validateTag(tag)
+local function validateElement(element)
     if nl_element > 0 then
-        if #tag > nl_element then
-            return false, "XMLThreatProtection[ElemNameExceeded]: Element name length exceeded (" .. tag .. ")."
+        if #element > nl_element then
+            return false, "XMLThreatProtection[ElemNameExceeded]: Element name length exceeded (" .. tag .. "), max " .. nl_element .. " allowed, found " .. #element .. "."
         end
     end
+
+    return true, ""
 end
 
 local function validateXml(value)
@@ -107,7 +103,7 @@ local function validateXml(value)
         -- Validate the child count
         if st_lcc > 0 then
             if #value > st_lcc then
-                return false, "XMLThreatProtection[ChildCountExceeded]: Children count exceeded."
+                return false, "XMLThreatProtection[ChildCountExceeded]: Children count exceeded, max " .. st_lcc .. " allowed, found " .. #value .. "."
             end
         end
 
@@ -115,9 +111,8 @@ local function validateXml(value)
         local attributeCount = 0
 
         for k,v in pairs(value) do
-            ngx.log(ngx.DEBUG, "k=" .. k)
             if k == 0 then -- TAG
-                local result, message = validateTag(v)
+                local result, message = validateElement(v)
                 if result == false then
                     return result, message
                 end
@@ -126,7 +121,7 @@ local function validateXml(value)
                     namespaceCount = namespaceCount + 1
                     if st_lncpe > 0 then  -- Validate the namespace count per element
                         if namespaceCount > st_lncpe then
-                            return false, "XMLThreatProtection[NSCountExceeded]: Namespace count exceeded."
+                            return false, "XMLThreatProtection[NSCountExceeded]: Namespace count exceeded, max " .. st_lncpe .. " allowed, found " .. namespaceCount .. "."
                         end
                     end
 
@@ -138,7 +133,7 @@ local function validateXml(value)
                     attributeCount = attributeCount + 1
                     if st_lacpe > 0 then   -- Validate the attribute count per element
                         if attributeCount > st_lacpe then
-                            return false, "XMLThreatProtection[AttrCountExceeded]: Attribute count exceed."
+                            return false, "XMLThreatProtection[AttrCountExceeded]: Attribute count exceed, max " .. st_lacpe .. " allowed, found " .. attributeCount .. "."
                         end
                     end
 
@@ -149,6 +144,7 @@ local function validateXml(value)
                     end
                 end
             else
+                nodes = nodes + 1
                 -- recursively repeat the same procedure
                 local result, message = validateXml(v)
                 if result == false then
@@ -157,10 +153,9 @@ local function validateXml(value)
             end
         end
     else
-        ngx.log(ngx.DEBUG, "VALUE " .. value)
         if v_text > 0 then
             if #value > v_text then
-                return false, "XMLThreatProtection[TextExceeded]: Text length exceeded (" .. value .. ")."
+                return false, "XMLThreatProtection[TextExceeded]: Text length exceeded (" .. value .. "), max " .. v_text .. " allowed, found " .. #value .. "."
             end
         end
     end
@@ -184,7 +179,6 @@ function XmlValidator.execute(body,
     value_text,
     value_attribute,
     value_namespace_uri,
-    value_comment,
     value_processing_instruction_data)
 
     nl_element = name_limits_element
@@ -200,17 +194,29 @@ function XmlValidator.execute(body,
     v_text = value_text
     v_attrib = value_attribute
     v_ns_uri = value_namespace_uri
-    v_comment = value_comment
     v_pid = value_processing_instruction_data
 
     ngx.log(ngx.DEBUG, body)
+
+    if string.starts(body, "<?") then
+        local position = string.find(body, "?>")
+        local pit = string.sub(body, 3, position - 1)
+
+        local result, message = validatePit(pit)
+        if result == false then
+            return result, message
+        end
+    end
 
     local parsedXml = xml.eval(body)
     if not parsedXml then
         return true, ""
     end
 
-    return validateXml(parsedXml)
+    local result, message = validateXml(parsedXml)
+    ngx.log(ngx.DEBUG, "nodes " .. nodes)
+
+    return result, message
 end
 
 return XmlValidator
