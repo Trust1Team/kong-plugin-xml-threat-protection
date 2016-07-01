@@ -18,7 +18,6 @@ local v_text
 local v_attrib
 local v_ns_uri
 local v_pid
-local nodes = 0
 
 ----------------------
 -- Utility function --
@@ -109,6 +108,7 @@ local function validateXml(value)
 
         local namespaceCount = 0
         local attributeCount = 0
+        local children = 0
 
         for k,v in pairs(value) do
             if k == 0 then -- TAG
@@ -144,7 +144,13 @@ local function validateXml(value)
                     end
                 end
             else
-                nodes = nodes + 1
+                children = children + 1
+                if st_lcc > 0 then
+                    if children > st_lcc then
+                        return false, "XMLThreatProtection[ChildCountExceeded]: Children count exceeded, max " .. st_lcc .. " allowed, found " .. children .. "."
+                    end
+                end
+
                 -- recursively repeat the same procedure
                 local result, message = validateXml(v)
                 if result == false then
@@ -213,10 +219,7 @@ function XmlValidator.execute(body,
         return true, ""
     end
 
-    local result, message = validateXml(parsedXml)
-    ngx.log(ngx.DEBUG, "nodes " .. nodes)
-
-    return result, message
+    return validateXml(parsedXml)
 end
 
 return XmlValidator
