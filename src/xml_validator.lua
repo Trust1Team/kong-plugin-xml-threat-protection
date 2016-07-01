@@ -108,7 +108,7 @@ end
 local function validateElement(element)
     if nl_element > 0 then
         if #element > nl_element then
-            return false, "XMLThreatProtection[ElemNameExceeded]: Element name length exceeded (" .. tag .. "), max " .. nl_element .. " allowed, found " .. #element .. "."
+            return false, "XMLThreatProtection[ElemNameExceeded]: Element name length exceeded (" .. element .. "), max " .. nl_element .. " allowed, found " .. #element .. "."
         end
     end
 
