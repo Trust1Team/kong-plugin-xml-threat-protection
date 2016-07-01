@@ -27,23 +27,41 @@ function string.starts(String, Start)
     return string.sub(String, 1, string.len(Start)) == Start
 end
 
+function string.trim(s)
+    return (s:gsub("^%s*(.-)%s*$", "%1"))
+end
+
 --------------------------
 -- Validation functions --
 --------------------------
 
 local function validatePit(pit)
+    local spacePos
+
     if nl_pit > 0 then -- Validate the processing instruction target length
-        local spacePos = string.find(pit, " ")
+        spacePos = string.find(pit, " ")
         if spacePos then
-            local target = string.sub(pit, 0, spacePos - 1)
-            if #target > nl_pit then
-                return false, "XMLThreatProtection[PITargetExceeded]: Processing Instruction target length exceeded (" .. target .. "), max " .. nl_pit .. " allowed, found " .. #target .. "."
+            local tag = string.sub(pit, 0, spacePos - 1)
+            if #tag > nl_pit then
+                return false, "XMLThreatProtection[PITargetExceeded]: Processing Instruction target length exceeded (" .. tag .. "), max " .. nl_pit .. " allowed, found " .. #tag .. "."
             end
         end
     end
 
     if v_pid > 0 then
+        while spacePos do
+            local quotePos = string.find(pit, '"', spacePos) -- find begin quote
+            quotePos = string.find(pit, '"', quotePos + 1) -- find trailing quote
 
+            if quotePos then
+                local pid = string.trim(string.sub(pit, spacePos + 1, quotePos))
+                if #pid > v_pid then
+                    return false, "XMLThreatProtection[PIDataExceeded]: Processing Instruction data length exceeded (" .. pid .. "), max " .. v_pid .. " allowed, found " .. #pid .. "."
+                end
+            end
+
+            spacePos = string.find(pit, " ", quotePos) -- find next space
+        end
     end
 
     return true, ""
@@ -202,11 +220,10 @@ function XmlValidator.execute(body,
     v_ns_uri = value_namespace_uri
     v_pid = value_processing_instruction_data
 
-    ngx.log(ngx.DEBUG, body)
-
     if string.starts(body, "<?") then
         local position = string.find(body, "?>")
         local pit = string.sub(body, 3, position - 1)
+        pit = string.trim(pit)
 
         local result, message = validatePit(pit)
         if result == false then
