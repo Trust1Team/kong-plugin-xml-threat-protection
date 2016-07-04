@@ -46,8 +46,6 @@ function XmlTheatProtectionHandler:access(config)
             return responses.send_OK()
         end
 
-        ngx.log(ngx.DEBUG, config.name_limits_element)
-
         local result, message = xml_validator.execute(body,
             config.name_limits_element,
             config.name_limits_attribute,
@@ -57,11 +55,12 @@ function XmlTheatProtectionHandler:access(config)
             config.structure_limits_attribute_count_per_element,
             config.structure_limits_namespace_count_per_element,
             config.structure_limits_child_count,
-            config.value_text,
-            config.value_attribute,
-            config.value_namespace_uri,
-            config.value_comment,
-            config.value_processing_instruction_data)
+            config.value_limits_text,
+            config.value_limits_attribute,
+            config.value_limits_namespace_uri,
+            config.value_limits_comment,
+            config.value_limits_processing_instruction_data)
+
         if result == true then
             return responses.send_HTTP_OK()
         else

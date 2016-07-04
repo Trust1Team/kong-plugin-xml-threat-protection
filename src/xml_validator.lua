@@ -9,15 +9,13 @@ local XmlValidator = {}
 local nl_element
 local nl_attribute
 local nl_ns_prefix
-local nl_pit
 local st_lnd
 local st_lacpe
 local st_lncpe
 local st_lcc
-local v_text
-local v_attrib
-local v_ns_uri
-local v_pid
+local vl_text
+local vl_attrib
+local vl_ns_uri
 
 ----------------------
 -- Utility function --
@@ -35,7 +33,7 @@ end
 -- Validation functions --
 --------------------------
 
-local function validatePit(pit)
+local function validatePit(pit, nl_pit, vl_pid)
     local spacePos
 
     if nl_pit > 0 then -- Validate the processing instruction target length
@@ -48,19 +46,38 @@ local function validatePit(pit)
         end
     end
 
-    if v_pid > 0 then
+    if vl_pid > 0 then
         while spacePos do
             local quotePos = string.find(pit, '"', spacePos) -- find begin quote
             quotePos = string.find(pit, '"', quotePos + 1) -- find trailing quote
-
             if quotePos then
                 local pid = string.trim(string.sub(pit, spacePos + 1, quotePos))
-                if #pid > v_pid then
-                    return false, "XMLThreatProtection[PIDataExceeded]: Processing Instruction data length exceeded (" .. pid .. "), max " .. v_pid .. " allowed, found " .. #pid .. "."
+                if #pid > vl_pid then
+                    return false, "XMLThreatProtection[PIDataExceeded]: Processing Instruction data length exceeded (" .. pid .. "), max " .. vl_pid .. " allowed, found " .. #pid .. "."
                 end
             end
 
             spacePos = string.find(pit, " ", quotePos) -- find next space
+        end
+    end
+
+    return true, ""
+end
+
+local function validateComments(body, vl_comment)
+
+    local commentPos
+
+    if vl_comment > 0 then
+        commentPos = string.find(body, "<!--")
+        while commentPos do
+            local commentEnd = string.find(body, "-->", commentPos)
+            local comment = string.trim(string.sub(body, commentPos + 4, commentEnd - 2))
+            if #comment > vl_comment then
+                return false, "XMLThreatProtection[CommentExceeded]: Comment length exceeded (" .. comment .. "), max " .. vl_comment .. " allowed, found " .. #comment .. "."
+            end
+
+            commentPos = string.find(body, "<!--", commentEnd)
         end
     end
 
@@ -80,9 +97,9 @@ local function validateNamespace(ns, value)
         end
     end
 
-    if v_ns_uri > 0 then
-        if #value > v_ns_uri then
-            return false, "XMLThreatProtection[NSURIExceeded]: Namespace uri length exceeded (" .. value .. "), max " .. v_ns_uri .. " allowed, found " .. #value .. "."
+    if vl_ns_uri > 0 then
+        if #value > vl_ns_uri then
+            return false, "XMLThreatProtection[NSURIExceeded]: Namespace uri length exceeded (" .. value .. "), max " .. vl_ns_uri .. " allowed, found " .. #value .. "."
         end
     end
 
@@ -96,9 +113,9 @@ local function validateAttribute(attrib, value)
         end
     end
 
-    if v_attrib > 0 then
-        if #value > v_attrib then
-            return false, "XMLThreatProtection[AttrValueExceeded]: Attribute value length exceeded (" .. value .. "), max " .. v_attrib .. " allowed, found " .. #value .. "."
+    if vl_attrib > 0 then
+        if #value > vl_attrib then
+            return false, "XMLThreatProtection[AttrValueExceeded]: Attribute value length exceeded (" .. value .. "), max " .. vl_attrib .. " allowed, found " .. #value .. "."
         end
     end
 
@@ -177,9 +194,9 @@ local function validateXml(value)
             end
         end
     else
-        if v_text > 0 then
-            if #value > v_text then
-                return false, "XMLThreatProtection[TextExceeded]: Text length exceeded (" .. value .. "), max " .. v_text .. " allowed, found " .. #value .. "."
+        if vl_text > 0 then
+            if #value > vl_text then
+                return false, "XMLThreatProtection[TextExceeded]: Text length exceeded (" .. value .. "), max " .. vl_text .. " allowed, found " .. #value .. "."
             end
         end
     end
@@ -200,37 +217,43 @@ function XmlValidator.execute(body,
     structure_limits_attribute_count_per_element,
     structure_limits_namespace_count_per_element,
     structure_limits_child_count,
-    value_text,
-    value_attribute,
-    value_namespace_uri,
-    value_processing_instruction_data)
+    value_limits_text,
+    value_limits_attribute,
+    value_limits_namespace_uri,
+    value_limits_comment,
+    value_limits_processing_instruction_data)
 
     nl_element = name_limits_element
     nl_attribute = name_limits_attribute
     nl_ns_prefix = name_limits_namespace_prefix
-    nl_pit = name_limits_processing_instruction_target
 
     st_lnd = structure_limits_node_depth
     st_lacpe = structure_limits_attribute_count_per_element
     st_lncpe = structure_limits_namespace_count_per_element
     st_lcc = structure_limits_child_count
 
-    v_text = value_text
-    v_attrib = value_attribute
-    v_ns_uri = value_namespace_uri
-    v_pid = value_processing_instruction_data
+    vl_text = value_limits_text
+    vl_attrib = value_limits_attribute
+    vl_ns_uri = value_limits_namespace_uri
 
+    -- Validate the processing instruction target and data
     if string.starts(body, "<?") then
         local position = string.find(body, "?>")
-        local pit = string.sub(body, 3, position - 1)
-        pit = string.trim(pit)
+        local pit = string.trim(string.sub(body, 3, position - 1))
 
-        local result, message = validatePit(pit)
+        local result, message = validatePit(pit, name_limits_processing_instruction_target, value_limits_processing_instruction_data)
         if result == false then
             return result, message
         end
     end
 
+    -- Validate the xml comments
+    local result, message = validateComments(body, value_limits_comment)
+    if result == false then
+        return result, message
+    end
+
+    -- Parse
     local parsedXml = xml.eval(body)
     if not parsedXml then
         return true, ""
