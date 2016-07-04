@@ -16,6 +16,7 @@ local st_lcc
 local vl_text
 local vl_attrib
 local vl_ns_uri
+local depth
 
 ----------------------
 -- Utility function --
@@ -134,6 +135,7 @@ end
 
 local function validateXml(value)
     if type(value) == "table" then
+
         -- Validate the child count
         if st_lcc > 0 then
             if #value > st_lcc then
@@ -150,6 +152,13 @@ local function validateXml(value)
                 local result, message = validateElement(v)
                 if result == false then
                     return result, message
+                end
+            elseif k == 1 and type(v) == "table" then
+                depth = depth + 1
+                if st_lnd > 0 then
+                    if depth > st_lnd then
+                        return false, "XMLThreatProtection[NodeDepthExceeded]: Node depth exceeded, max " .. st_lnd .. " allowed, found " .. depth .. "."
+                    end
                 end
             elseif type(k) == "string" then
                 if string.starts(k, "xmlns") then
@@ -203,7 +212,6 @@ local function validateXml(value)
 
     return true, ""
 end
-
 ------------------------------
 -- Validator implementation --
 ------------------------------
@@ -259,6 +267,7 @@ function XmlValidator.execute(body,
         return true, ""
     end
 
+    depth = 0
     return validateXml(parsedXml)
 end
 
