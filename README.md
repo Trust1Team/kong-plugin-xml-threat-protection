@@ -34,6 +34,21 @@ TBD
 
 ## Configuration Parameters
 
+| key                                          | default value | required | description                                                                                                                       |
+|----------------------------------------------|---------------|----------|-----------------------------------------------------------------------------------------------------------------------------------|
+| name_limits_element                          | 0             | FALSE    | Specifies a limit on the maximum number of characters permitted in any element name in the XML document.                          |
+| name_limits_attribute                        | 0             | FALSE    | Specifies a limit on the maximum number of characters permitted in any attribute name in the XML document.                        |
+| name_limits_namespace_prefix                 | 0             | FALSE    | Specifies a limit on the maximum number of characters permitted in the namespace prefix in the XML document.                      |
+| name_limits_processing_instruction_target    | 0             | FALSE    | Specifies a limit on the maximum number of characters permitted in the target of any processing instructions in the XML document. |
+| structure_limits_node_depth                  | 0             | FALSE    | Specifies the maximum node depth allowed in the XML.                                                                              |
+| structure_limits_attribute_count_per_element | 0             | FALSE    | Specifies a limit on the maximum number of characters permitted in any element name in the XML document.                          |
+| structure_limits_namespace_count_per_element | 0             | FALSE    | Specifies the maximum number of namespace definitions allowed for any element.                                                    |
+| structure_limits_child_count                 | 0             | FALSE    | Specifies the maximum number of child elements allowed for any element.                                                           |
+| value_limits_text                            | 0             | FALSE    | Specifies a character limit for any text nodes present in the XML document.                                                       |
+| value_limits_attribute                       | 0             | FALSE    | Specifies a character limit for any attribute values present in the XML document.                                                 |
+| value_limits_namespace_uri                   | 0             | FALSE    | Specifies a character limit for any namespace URIs present in the XML document.                                                   |
+| value_limits_comment                         | 0             | FALSE    | Specifies a character limit for any comments present in the XML document.                                                         |
+| value_limits_processing_instruction_data     | 0             | FALSE    | Specifies a character limit for any processing instruction text present in the XML document.                                      |
 
 ## Errors
 
