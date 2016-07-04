@@ -54,22 +54,22 @@ $ curl -X POST http://kong:8001/apis/{api}/plugins \
 
 `api`: The `id` or `name` of the API that this plugin configuration will target
 
-form parameter                                 | required     | description
----                                            | ---          | ---
-`name`                                         | *required*   | The name of the plugin to use, in this case: `xml-threat-protection`
-`name_limits_element`                          | *optional*   | Specifies a limit on the maximum number of characters permitted in any element name in the XML document.
-`name_limits_attribute`                        | *optional*   | Specifies a limit on the maximum number of characters permitted in any attribute name in the XML document.
-`name_limits_namespace_prefix`                 | *optional*   | Specifies a limit on the maximum number of characters permitted in the namespace prefix in the XML document.
-`name_limits_processing_instruction_target`    | *optional*   | Specifies a limit on the maximum number of characters permitted in the target of any processing instructions in the XML document.
-`structure_limits_node_depth`                  | *optional*   | Specifies the maximum node depth allowed in the XML.
-`structure_limits_attribute_count_per_element` | *optional*   | Specifies a limit on the maximum number of characters permitted in any element name in the XML document.
-`structure_limits_namespace_count_per_element` | *optional*   | Specifies the maximum number of namespace definitions allowed for any element.
-`structure_limits_child_count`                 | *optional*   | Specifies the maximum number of child elements allowed for any element.
-`value_limits_text`                            | *optional*   | Specifies a character limit for any text nodes present in the XML document.
-`value_limits_attribute`                       | *optional*   | Specifies a character limit for any attribute values present in the XML document.
-`value_limits_namespace_uri`                   | *optional*   | Specifies a character limit for any namespace URIs present in the XML document.
-`value_limits_comment`                         | *optional*   | Specifies a character limit for any comments present in the XML document.
-`value_limits_processing_instruction_data`     | *optional*   | Specifies a character limit for any processing instruction text present in the XML document.
+form parameter                                        | required     | description
+---                                                   | ---          | ---
+`name`                                                | *required*   | The name of the plugin to use, in this case: `xml-threat-protection`
+`config.name_limits_element`                          | *optional*   | Specifies a limit on the maximum number of characters permitted in any element name in the XML document.
+`config.name_limits_attribute`                        | *optional*   | Specifies a limit on the maximum number of characters permitted in any attribute name in the XML document.
+`config.name_limits_namespace_prefix`                 | *optional*   | Specifies a limit on the maximum number of characters permitted in the namespace prefix in the XML document.
+`config.name_limits_processing_instruction_target`    | *optional*   | Specifies a limit on the maximum number of characters permitted in the target of any processing instructions in the XML document.
+`config.structure_limits_node_depth`                  | *optional*   | Specifies the maximum node depth allowed in the XML.
+`config.structure_limits_attribute_count_per_element` | *optional*   | Specifies a limit on the maximum number of characters permitted in any element name in the XML document.
+`config.structure_limits_namespace_count_per_element` | *optional*   | Specifies the maximum number of namespace definitions allowed for any element.
+`config.structure_limits_child_count`                 | *optional*   | Specifies the maximum number of child elements allowed for any element.
+`config.value_limits_text`                            | *optional*   | Specifies a character limit for any text nodes present in the XML document.
+`config.value_limits_attribute`                       | *optional*   | Specifies a character limit for any attribute values present in the XML document.
+`config.value_limits_namespace_uri`                   | *optional*   | Specifies a character limit for any namespace URIs present in the XML document.
+`config.value_limits_comment`                         | *optional*   | Specifies a character limit for any comments present in the XML document.
+`config.value_limits_processing_instruction_data`     | *optional*   | Specifies a character limit for any processing instruction text present in the XML document.
 
 ----
 
